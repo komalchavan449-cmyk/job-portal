@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Portal - Jobs</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f1f5f9;
+            margin: 0;
+            padding: 20px;
+        }
+
+        header {
+            background: #1d4ed8;
+            color: white;
+            text-align: center;
+            padding: 25px;
+            border-radius: 12px;
+        }
+
+        .job-card {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 10px;
+            box-shadow: 0 3px 10px #00000015;
+        }
+
+        .job-card h2 {
+            color: #1d4ed8;
+        }
+
+        .apply-btn {
+            background: #16a34a;
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .apply-btn:hover {
+            background: #15803d;
+        }
+
+        #jobs {
+            max-width: 900px;
+            margin: 20px auto;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>Job Portal</h1>
+        <p>Find Your Dream Job</p>
+    </header>
+
+    <main id="jobs">
+        <h2>Available Jobs</h2>
+        <div id="jobList">Loading jobs...</div>
+    </main>
+
+    <script>
+        async function loadJobs() {
+            const jobList = document.getElementById("jobList");
+
+            try {
+                const response = await fetch("/api/jobs");
+                const data = await response.json();
+
+                if (!response.ok || !data.success) {
+                    throw new Error("Unable to load jobs");
+                }
+
+                jobList.innerHTML = "";
+
+                if (!data.jobs || data.jobs.length === 0) {
+                    jobList.textContent =
+                        "No jobs available yet. Please check again later.";
+                    return;
+                }
+
+                data.jobs.forEach(job => {
+                    const card = document.createElement("div");
+                    card.className = "job-card";
+
+                    const title = document.createElement("h2");
+                    title.textContent = job.title;
+
+                    const company = document.createElement("p");
+                    company.textContent =
+                        "Company: " + (job.company_name || "Not specified");
+
+                    const location = document.createElement("p");
+                    location.textContent =
+                        "Location: " + (job.location || "Not specified");
+
+                    const salary = document.createElement("p");
+                    salary.textContent =
+                        "Salary: " + (job.salary || "Not specified");
+
+                    const applyButton = document.createElement("button");
+                    applyButton.className = "apply-btn";
+                    applyButton.textContent = "Apply Now";
+
+                    applyButton.addEventListener("click", () => {
+                        alert("Job ID: " + job.id +
+                              ". Apply functionality will be added next.");
+                    });
+
+                    card.append(title, company, location, salary, applyButton);
+                    jobList.appendChild(card);
+                });
+            } catch (error) {
+                jobList.textContent =
+                    "Jobs load झाले नाहीत. API आणि server तपासा.";
+                console.error(error);
+            }
+        }
+
+        loadJobs();
+    </script>
+</body>
+</html>

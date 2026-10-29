@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Job Applications</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 30px;
+            background: #f4f6f9;
+        }
+        h1 { color: #222; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+        th, td {
+            padding: 12px;
+            border: 1px solid #ddd;
+            text-align: center;
+        }
+        th { background: #263b55; color: white; }
+        button {
+            padding: 8px 12px;
+            margin: 3px;
+            border: none;
+            color: white;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .approve { background: #198754; }
+        .reject { background: #dc3545; }
+        #message { margin: 15px 0; }
+    </style>
+</head>
+<body>
+    <h1>Admin - Job Applications</h1>
+    <p id="message">Loading applications...</p>
+
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Job ID</th>
+                <th>Candidate ID</th>
+                <th>Status</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody id="applications"></tbody>
+    </table>
+
+    <script>
+        async function loadApplications() {
+            const message = document.getElementById("message");
+
+            try {
+                const response = await fetch("/api/admin/applications");
+                const data = await response.json();
+
+                if (!response.ok || !data.success) {
+                    throw new Error(data.message || "Failed to load");
+                }
+
+                const tbody = document.getElementById("applications");
+                tbody.innerHTML = "";
+
+                data.applications.forEach(app => {
+                    const tr = document.createElement("tr");
+
+                    [app.id, app.job_id, app.candidate_id, app.status]
+                        .forEach(value => {
+                            const td = document.createElement("td");
+                            td.textContent = value ?? "";
+                            tr.appendChild(td);
+                        });
+
+                    const action = document.createElement("td");
+
+                    if (["Approved", "Rejected"].includes(app.status)) {
+                        action.textContent = "Decision made";
+                    } else {
+                        const approve = document.createElement("button");
+                        approve.textContent = "Approve";
+                        approve.className = "approve";
+                        approve.onclick = () =>
+                            updateStatus(app.id, "Approved");
+
+                        const reject = document.createElement("button");
+                        reject.textContent = "Reject";
+                        reject.className = "reject";
+                        reject.onclick = () =>
+                            updateStatus(app.id, "Rejected");
+
+                        action.append(approve, reject);
+                    }
+
+                    tr.appendChild(action);
+                    tbody.appendChild(tr);
+                });
+
+                message.textContent =
+                    `Applications loaded: ${data.applications.length}`;
+            } catch (error) {
+                message.textContent = error.message;
+            }
+        }
+
+        async function updateStatus(id, status) {
+            try {
+                const response = await fetch(
+                    `/api/admin/applications/${id}/status`,
+                    {
+                        method: "PATCH",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({ status })
+                    }
+                );
+
+                const data = await response.json();
+
+                if (!response.ok || !data.success) {
+                    throw new Error(data.message || "Update failed");
+                }
+
+                alert(data.message);
+                loadApplications();
+            } catch (error) {
+                alert(error.message);
+            }
+        }
+
+        loadApplications();
+    </script>
+</body>
+</html>

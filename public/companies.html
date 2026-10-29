@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Portal - Companies</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f1f5f9;
+            margin: 0;
+            padding: 20px;
+        }
+
+        header {
+            background: #1e40af;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 10px;
+        }
+
+        #companies {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 25px;
+        }
+
+        .company-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 3px 10px #00000015;
+        }
+
+        .company-card h2 {
+            color: #1e40af;
+        }
+
+        .company-card p {
+            color: #475569;
+        }
+
+        .error {
+            color: #b91c1c;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>Job Portal</h1>
+        <p>Explore Registered Companies</p>
+    </header>
+
+    <main>
+        <h2>Available Companies</h2>
+        <div id="companies">Loading companies...</div>
+    </main>
+
+    <script>
+        async function loadCompanies() {
+            const container = document.getElementById("companies");
+
+            try {
+                const response = await fetch("/api/companies");
+                const data = await response.json();
+
+                if (!response.ok || !data.success) {
+                    throw new Error("Unable to load companies");
+                }
+
+                container.innerHTML = "";
+
+                if (data.companies.length === 0) {
+                    container.textContent = "No companies registered yet.";
+                    return;
+                }
+
+                data.companies.forEach(company => {
+                    const card = document.createElement("div");
+                    card.className = "company-card";
+
+                    const title = document.createElement("h2");
+                    title.textContent = company.company_name;
+
+                    const location = document.createElement("p");
+                    location.textContent =
+                        "Location: " + (company.location || "Not specified");
+
+                    const recruiter = document.createElement("p");
+                    recruiter.textContent =
+                        "Recruiter: " + (company.recruiter_name || "Not specified");
+
+                    card.append(title, location, recruiter);
+                    container.appendChild(card);
+                });
+            } catch (error) {
+                container.innerHTML =
+                    '<p class="error">Companies load झाल्या नाहीत. Server तपासा.</p>';
+                console.error(error);
+            }
+        }
+
+        loadCompanies();
+    </script>
+</body>
+</html>

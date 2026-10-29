@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recruiter Dashboard - Job Portal</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f6f9;
+            color: #333;
+        }
+
+        header {
+            background: #173b70;
+            color: white;
+            padding: 20px 6%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        header h1 {
+            font-size: 24px;
+        }
+
+        .logout-btn {
+            background: white;
+            color: #173b70;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 1200px;
+            margin: 30px auto;
+        }
+
+        .welcome, .section {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            box-shadow: 0 3px 12px #00000010;
+        }
+
+        h2 {
+            color: #173b70;
+            margin-bottom: 18px;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 15px;
+        }
+
+        button {
+            cursor: pointer;
+        }
+
+        .primary-btn {
+            background: #176b45;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 6px;
+            font-weight: bold;
+        }
+
+        .primary-btn:hover {
+            background: #105436;
+        }
+
+        .primary-btn:disabled {
+            background: gray;
+            cursor: not-allowed;
+        }
+
+        .jobs-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 20px;
+        }
+
+        .job-card, .application-card {
+            background: #f9fafc;
+            padding: 20px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+        }
+
+        .job-card h3, .application-card h3 {
+            color: #173b70;
+            margin-bottom: 12px;
+        }
+
+        .job-card p, .application-card p {
+            margin-bottom: 10px;
+            overflow-wrap: anywhere;
+        }
+
+        .view-btn {
+            background: #173b70;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            margin-top: 8px;
+        }
+
+        .status-select {
+            margin: 10px 0;
+        }
+
+        .message {
+            padding: 15px;
+            background: #f4f6f9;
+            border-radius: 6px;
+            color: #555;
+            grid-column: 1 / -1;
+        }
+
+        .applications-area {
+            margin-top: 25px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        footer {
+            text-align: center;
+            padding: 25px;
+            color: #666;
+        }
+
+        @media(max-width: 600px) {
+            .container {
+                width: 94%;
+            }
+
+            header {
+                padding: 18px 5%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <h1>Recruiter Dashboard</h1>
+
+    <div>
+        <span id="recruiter-name">Welcome, Recruiter!</span>
+        <button class="logout-btn" id="logout-btn">Logout</button>
+    </div>
+</header>
+
+<main class="container">
+
+    <section class="welcome">
+        <h2>Welcome, Recruiter!</h2>
+        <p>Manage your job opportunities from here.</p>
+    </section>
+
+    <!-- POST JOB -->
+    <section class="section">
+
+        <h2>Post a Job</h2>
+
+        <form id="job-form">
+
+            <div class="form-group">
+                <label for="company">Select Company</label>
+
+                <select id="company" required>
+                    <option value="">Loading companies...</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="job-title">Job Title</label>
+
+                <input
+                    type="text"
+                    id="job-title"
+                    placeholder="Example: Software Developer"
+                    required
+                >
+            </div>
+
+            <button type="submit" class="primary-btn" id="post-btn">
+                Post Job
+            </button>
+
+        </form>
+
+        <p id="job-message"></p>
+
+    </section>
+
+    <!-- YOUR JOBS -->
+    <section class="section">
+
+        <h2>Your Job Listings</h2>
+
+        <div id="jobs-list" class="jobs-grid">
+            <p class="message">Loading your jobs...</p>
+        </div>
+
+    </section>
+
+    <!-- APPLICATIONS -->
+    <section class="section hidden" id="applications-section">
+
+        <h2 id="applications-heading">Job Applications</h2>
+
+        <div id="applications-list" class="jobs-grid">
+        </div>
+
+    </section>
+
+</main>
+
+<footer>
+    Job Portal © 2026
+</footer>
+
+
+<script>
+
+    // 1. Get logged-in recruiter
+    let currentUser = null;
+
+    try {
+        const savedUser =
+            localStorage.getItem("user") ||
+            localStorage.getItem("currentUser");
+
+        currentUser = savedUser ? JSON.parse(savedUser) : null;
+
+    } catch (error) {
+        console.error("User error:", error);
+    }
+
+
+    // 2. Check recruiter login
+    if (!currentUser || !currentUser.id) {
+
+        alert("Please login first.");
+        window.location.href = "/login.html";
+
+    } else if (
+        currentUser.role &&
+        currentUser.role.toLowerCase() !== "recruiter"
+    ) {
+
+        alert("Please login with recruiter account.");
+        window.location.href = "/login.html";
+
+    } else {
+
+        document.getElementById("recruiter-name").textContent =
+            "Welcome, " + (currentUser.name || "Recruiter");
+
+    }
+
+
+    // 3. Logout
+    document.getElementById("logout-btn").addEventListener("click", function () {
+
+        localStorage.removeItem("user");
+        localStorage.removeItem("currentUser");
+
+        window.location.href = "/login.html";
+
+    });
+
+
+    // 4. Load recruiter companies
+    async function loadCompanies() {
+
+        const select = document.getElementById("company");
+
+        select.innerHTML = '<option value="">Select Company</option>';
+
+        try {
+
+            const response = await fetch(
+                "/api/recruiter/companies/" + currentUser.id
+            );
+
+            const data = await response.json();
+
+            if (!response.ok || !data.success) {
+                throw new Error(data.message || "Unable to load companies");
+            }
+
+            if (data.companies.length === 0) {
+
+                select.innerHTML =
+                    '<option value="">No companies found. Please add a company first.</option>';
+
+                return;
+
+            }
+
+            data.companies.forEach(function (company) {
+
+                const option = document.createElement("option");
+
+                option.value = company.id;
+
+                option.textContent =
+                    company.company_name +
+                    (company.location ? " - " + company.location : "");
+
+                select.appendChild(option);
+
+            });
+
+        } catch (error) {
+
+            console.error("Companies error:", error);
+
+            select.innerHTML =
+                '<option value="">Unable to load companies</option>';
+
+        }
+
+    }
+
+
+    // 5. Post a new job
+    document.getElementById("job-form").addEventListener("submit", async function (event) {
+
+        event.preventDefault();
+
+        const companyId = document.getElementById("company").value;
+        const title = document.getElementById("job-title").value.trim();
+        const button = document.getElementById("post-btn");
+        const message = document.getElementById("job-message");
+
+        if (!companyId || !title) {
+
+            message.textContent = "Please fill all fields.";
+            return;
+
+        }
+
+        button.disabled = true;
+        button.textContent = "Posting...";
+
+        try {
+
+            const response = await fetch("/api/recruiter/jobs", {
+
+                method: "POST",
+
+                headers: {
+                    "Content-Type": "application/json"
+                },
+
+                body: JSON.stringify({
+
+                    recruiterId: currentUser.id,
+                    companyId: companyId,
+                    title: title
+
+                })
+
+            });
+
+            const data = await response.json();
+
+            if (!response.ok || !data.success) {
+
+                throw new Error(data.message || "Unable to post job");
+
+            }
+
+            message.textContent = "Job posted successfully!";
+
+            document.getElementById("job-title").value = "";
+
+            await loadMyJobs();
+
+        } catch (error) {
+
+            console.error("Post job error:", error);
+
+            message.textContent = error.message;
+
+        } finally {
+
+            button.disabled = false;
+            button.textContent = "Post Job";
+
+        }
+
+    });
+
+
+    // 6. Load recruiter's own jobs
+    async function loadMyJobs() {
+
+        const container = document.getElementById("jobs-list");
+
+        container.textContent = "Loading your jobs...";
+
+        try {
+
+            const response = await fetch(
+                "/api/recruiter/jobs/" + currentUser.id
+            );
+
+            const data = await response.json();
+
+            if (!response.ok || !data.success) {
+
+                throw new Error(data.message || "Unable to load jobs");
+
+            }
+
+            container.replaceChildren();
+
+            const jobs = data.jobs || [];
+
+            if (jobs.length === 0) {
+
+                container.textContent =
+                    "You have not posted any jobs yet.";
+
+                return;
+
+            }
+
+            jobs.forEach(function (job) {
+
+                const card = document.createElement("article");
+                card.className = "job-card";
+
+                const title = document.createElement("h3");
+                title.textContent = job.title;
+
+                const company = document.createElement("p");
+                company.textContent =
+                    "Company: " + job.company_name;
+
+                const location = document.createElement("p");
+                location.textContent =
+                    "Location: " + (job.location || "Not specified");
+
+                const count = document.createElement("p");
+                count.textContent =
+                    "Total Applications: " + job.total_applications;
+
+                const viewButton = document.createElement("button");
+                viewButton.className = "view-btn";
+                viewButton.textContent = "View Applications";
+
+                viewButton.addEventListener("click", function () {
+
+                    loadApplications(job.id, job.title);
+
+                });
+
+                card.append(
+                    title,
+                    company,
+                    location,
+                    count,
+                    viewButton
+                );
+
+                container.appendChild(card);
+
+            });
+
+        } catch (error) {
+
+            console.error("Jobs error:", error);
+
+            container.textContent =
+                "Unable to load jobs. Please check server APIs.";
+
+        }
+
+    }
+
+
+    // 7. Load applications for selected job
+    async function loadApplications(jobId, jobTitle) {
+
+        const section =
+            document.getElementById("applications-section");
+
+        const container =
+            document.getElementById("applications-list");
+
+        section.classList.remove("hidden");
+
+        document.getElementById("applications-heading").textContent =
+            "Applications for: " + jobTitle;
+
+        container.textContent = "Loading applications...";
+
+        section.scrollIntoView({ behavior: "smooth" });
+
+        try {
+
+            const response = await fetch(
+                "/api/recruiter/jobs/" +
+                jobId +
+                "/applications/" +
+                currentUser.id
+            );
+
+            const data = await response.json();
+
+            if (!response.ok || !data.success) {
+
+                throw new Error(
+                    data.message || "Unable to load applications"
+                );
+
+            }
+
+            container.replaceChildren();
+
+            const applications = data.applications || [];
+
+            if (applications.length === 0) {
+
+                container.textContent =
+                    "No candidates have applied for this job yet.";
+
+                return;
+
+            }
+
+            applications.forEach(function (application) {
+
+                const card = document.createElement("article");
+                card.className = "application-card";
+
+                const name = document.createElement("h3");
+                name.textContent =
+                    application.candidate_name || "Candidate";
+
+                const email = document.createElement("p");
+                email.textContent =
+                    "Email: " + application.candidate_email;
+
+                const status = document.createElement("p");
+                status.textContent =
+                    "Current Status: " + application.status;
+
+                const date = document.createElement("p");
+
+                if (application.applied_at) {
+                    date.textContent =
+                        "Applied on: " +
+                        new Date(application.applied_at).toLocaleDateString();
+                }
+
+                const label = document.createElement("label");
+                label.textContent = "Update Status";
+
+                const select = document.createElement("select");
+                select.className = "status-select";
+
+                const statuses = [
+                    "Under Review",
+                    "Shortlisted",
+                    "Approved",
+                    "Rejected"
+                ];
+
+                statuses.forEach(function (value) {
+
+                    const option = document.createElement("option");
+                    option.value = value;
+                    option.textContent = value;
+
+                    if (value === application.status) {
+                        option.selected = true;
+                    }
+
+                    select.appendChild(option);
+
+                });
+
+                const updateButton = document.createElement("button");
+                updateButton.className = "primary-btn";
+                updateButton.textContent = "Update Status";
+
+                updateButton.addEventListener("click", async function () {
+
+                    await updateApplicationStatus(
+                        application.application_id,
+                        select.value,
+                        jobId,
+                        jobTitle,
+                        updateButton
+                    );
+
+                });
+
+                card.append(
+                    name,
+                    email,
+                    status,
+                    date,
+                    label,
+                    select,
+                    updateButton
+                );
+
+                container.appendChild(card);
+
+            });
+
+        } catch (error) {
+
+            console.error("Applications error:", error);
+
+            container.textContent =
+                "Unable to load applications.";
+
+        }
+
+    }
+
+
+    // 8. Update candidate application status
+    async function updateApplicationStatus(
+        applicationId,
+        status,
+        jobId,
+        jobTitle,
+        button
+    ) {
+
+        button.disabled = true;
+        button.textContent = "Updating...";
+
+        try {
+
+            const response = await fetch(
+                "/api/recruiter/applications/" +
+                applicationId +
+                "/status",
+                {
+                    method: "PATCH",
+
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+
+                    body: JSON.stringify({
+                        recruiterId: currentUser.id,
+                        status: status
+                    })
+                }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok || !data.success) {
+
+                throw new Error(
+                    data.message || "Status update failed"
+                );
+
+            }
+
+            alert("Application status updated successfully!");
+
+            await loadApplications(jobId, jobTitle);
+            await loadMyJobs();
+
+        } catch (error) {
+
+            console.error("Status update error:", error);
+            alert(error.message);
+
+        } finally {
+
+            button.disabled = false;
+            button.textContent = "Update Status";
+
+        }
+
+    }
+
+
+    // 9. Start dashboard
+    if (currentUser && currentUser.id) {
+
+        loadCompanies();
+        loadMyJobs();
+
+    }
+
+</script>
+
+</body>
+</html>

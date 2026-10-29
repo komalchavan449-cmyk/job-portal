@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Candidate Dashboard - Job Portal</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f6f9;
+            color: #333;
+        }
+
+        header {
+            background: #173b70;
+            color: white;
+            padding: 20px 6%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        header h1 {
+            font-size: 24px;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        #candidate-name {
+            font-weight: bold;
+        }
+
+        .logout-btn {
+            background: white;
+            color: #173b70;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 1200px;
+            margin: 30px auto;
+        }
+
+        .welcome {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 10px #00000010;
+        }
+
+        .welcome h2 {
+            color: #173b70;
+            margin-bottom: 10px;
+        }
+
+        .section-title {
+            color: #173b70;
+            margin: 30px 0 20px;
+        }
+
+        .jobs-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 20px;
+        }
+
+        .job-card {
+            background: white;
+            padding: 22px;
+            border-radius: 10px;
+            box-shadow: 0 3px 12px #00000010;
+        }
+
+        .job-card h3 {
+            color: #173b70;
+            margin-bottom: 15px;
+        }
+
+        .job-card p {
+            margin-bottom: 12px;
+            line-height: 1.5;
+            overflow-wrap: anywhere;
+        }
+
+        .apply-btn {
+            background: #176b45;
+            color: white;
+            border: none;
+            padding: 11px 18px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 8px;
+        }
+
+        .apply-btn:hover {
+            background: #105436;
+        }
+
+        .apply-btn:disabled {
+            background: gray;
+            cursor: not-allowed;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: bold;
+            background: #e9eef5;
+            color: #333;
+        }
+
+        .status-approved,
+        .status-shortlisted {
+            background: #d9f5e5;
+            color: #176b45;
+        }
+
+        .status-rejected {
+            background: #fde2e2;
+            color: #a51e1e;
+        }
+
+        .status-pending,
+        .status-under-review {
+            background: #fff0c2;
+            color: #805b00;
+        }
+
+        .message {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            color: #555;
+            grid-column: 1 / -1;
+        }
+
+        footer {
+            text-align: center;
+            padding: 25px;
+            color: #666;
+            margin-top: 30px;
+        }
+
+        @media (max-width: 600px) {
+            header {
+                padding: 16px 5%;
+            }
+
+            .container {
+                width: 92%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <h1>Candidate Dashboard</h1>
+
+        <div class="header-right">
+            <span id="candidate-name">Welcome</span>
+            <button class="logout-btn" id="logout-btn">Logout</button>
+        </div>
+    </header>
+
+    <main class="container">
+
+        <section class="welcome">
+            <h2>Welcome to Your Dashboard!</h2>
+            <p>Find jobs, apply for jobs and check your application status.</p>
+        </section>
+
+        <!-- Available Jobs -->
+        <section>
+            <h2 class="section-title">Available Jobs</h2>
+
+            <div id="jobs-list" class="jobs-grid">
+                <p class="message">Loading jobs...</p>
+            </div>
+        </section>
+
+        <!-- My Applications -->
+        <section>
+            <h2 class="section-title">My Applications</h2>
+
+            <div id="application-list" class="jobs-grid">
+                <p class="message">Loading applications...</p>
+            </div>
+        </section>
+
+    </main>
+
+    <footer>
+        Job Portal © 2026
+    </footer>
+
+
+    <!-- JavaScript starts here -->
+    <script>
+
+        // 1. Get logged-in candidate
+        let currentUser = null;
+
+        try {
+            const savedUser =
+                localStorage.getItem("user") ||
+                localStorage.getItem("currentUser");
+
+            currentUser = savedUser
+                ? JSON.parse(savedUser)
+                : null;
+
+        } catch (error) {
+            console.error("User error:", error);
+        }
+
+
+        // 2. Check login
+        if (!currentUser || !currentUser.id) {
+
+            alert("Please login first.");
+            window.location.href = "/login.html";
+
+        } else if (
+            currentUser.role &&
+            currentUser.role.toLowerCase() !== "candidate"
+        ) {
+
+            alert("Please login with candidate account.");
+            window.location.href = "/login.html";
+
+        } else {
+
+            document.getElementById("candidate-name").textContent =
+                "Welcome, " + (currentUser.name || "Candidate");
+
+        }
+
+
+        // 3. Logout
+        document.getElementById("logout-btn").addEventListener("click", function () {
+
+            localStorage.removeItem("user");
+            localStorage.removeItem("currentUser");
+
+            window.location.href = "/login.html";
+
+        });
+
+
+        // 4. Load available jobs
+        async function loadJobs() {
+
+            const container = document.getElementById("jobs-list");
+
+            container.textContent = "Loading jobs...";
+
+            try {
+
+                const response = await fetch("/api/jobs");
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.message || "Unable to load jobs");
+                }
+
+                const jobs = Array.isArray(data)
+                    ? data
+                    : (data.jobs || []);
+
+                container.replaceChildren();
+
+                if (jobs.length === 0) {
+
+                    container.textContent = "No jobs available currently.";
+                    return;
+
+                }
+
+                jobs.forEach(function (job) {
+
+                    const card = document.createElement("div");
+                    card.className = "job-card";
+
+                    const title = document.createElement("h3");
+                    title.textContent =
+                        job.title || job.job_title || "Job";
+
+                    const company = document.createElement("p");
+                    company.textContent =
+                        "Company: " +
+                        (job.company_name || job.company || "Not specified");
+
+                    const location = document.createElement("p");
+                    location.textContent =
+                        "Location: " + (job.location || "Not specified");
+
+                    const description = document.createElement("p");
+                    description.textContent =
+                        "Description: " +
+                        (job.description || "No description available");
+
+                    const button = document.createElement("button");
+                    button.className = "apply-btn";
+                    button.textContent = "Apply Now";
+
+                    button.addEventListener("click", function () {
+
+                        applyForJob(
+                            job.id || job.job_id,
+                            button
+                        );
+
+                    });
+
+                    card.append(
+                        title,
+                        company,
+                        location,
+                        description,
+                        button
+                    );
+
+                    container.appendChild(card);
+
+                });
+
+            } catch (error) {
+
+                console.error("Jobs error:", error);
+
+                container.textContent =
+                    "Unable to load jobs. Please check your server.";
+
+            }
+
+        }
+
+
+        // 5. Apply for job
+        async function applyForJob(jobId, button) {
+
+            if (!currentUser || !currentUser.id) {
+
+                alert("Please login first.");
+                return;
+
+            }
+
+            if (!jobId) {
+
+                alert("Job ID not found.");
+                return;
+
+            }
+
+            button.disabled = true;
+            button.textContent = "Applying...";
+
+            try {
+
+                const response = await fetch("/api/apply", {
+
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+
+                    body: JSON.stringify({
+
+                        jobId: jobId,
+                        candidateId: currentUser.id
+
+                    })
+
+                });
+
+                const data = await response.json();
+
+                if (!response.ok || data.success === false) {
+
+                    throw new Error(
+                        data.message || "Application failed"
+                    );
+
+                }
+
+                alert(
+                    data.message || "Application submitted successfully!"
+                );
+
+                // Refresh application status
+                await loadMyApplications();
+
+            } catch (error) {
+
+                console.error("Apply error:", error);
+                alert(error.message);
+
+            } finally {
+
+                button.disabled = false;
+                button.textContent = "Apply Now";
+
+            }
+
+        }
+
+
+        // 6. Load candidate applications
+        async function loadMyApplications() {
+
+            const container =
+                document.getElementById("application-list");
+
+            if (!container || !currentUser || !currentUser.id) {
+                return;
+            }
+
+            container.textContent = "Loading applications...";
+
+            try {
+
+                const response = await fetch(
+                    "/api/candidate/applications/" +
+                    encodeURIComponent(currentUser.id)
+                );
+
+                const data = await response.json();
+
+                if (!response.ok || !data.success) {
+
+                    throw new Error(
+                        data.message || "Unable to load applications"
+                    );
+
+                }
+
+                container.replaceChildren();
+
+                const applications = data.applications || [];
+
+                if (applications.length === 0) {
+
+                    container.textContent =
+                        "You have not applied for any jobs yet.";
+
+                    return;
+
+                }
+
+                applications.forEach(function (application) {
+
+                    const card = document.createElement("div");
+                    card.className = "job-card";
+
+                    const title = document.createElement("h3");
+                    title.textContent =
+                        application.job_title || "Job";
+
+                    const company = document.createElement("p");
+                    company.textContent =
+                        "Company: " +
+                        (application.company_name || "Not specified");
+
+                    const statusText = document.createElement("p");
+                    statusText.textContent = "Application Status: ";
+
+                    const statusBadge = document.createElement("span");
+
+                    const status = application.status || "Applied";
+
+                    statusBadge.className =
+                        "status status-" +
+                        status.toLowerCase().replace(/\s+/g, "-");
+
+                    statusBadge.textContent = status;
+
+                    statusText.appendChild(statusBadge);
+
+                    const date = document.createElement("p");
+
+                    if (application.applied_at) {
+
+                        const parsedDate =
+                            new Date(application.applied_at);
+
+                        date.textContent =
+                            "Applied on: " +
+                            (
+                                Number.isNaN(parsedDate.getTime())
+                                    ? application.applied_at
+                                    : parsedDate.toLocaleDateString()
+                            );
+
+                    }
+
+                    card.append(title, company, statusText);
+
+                    if (date.textContent) {
+                        card.appendChild(date);
+                    }
+
+                    container.appendChild(card);
+
+                });
+
+            } catch (error) {
+
+                console.error("Application status error:", error);
+
+                container.textContent =
+                    "Unable to load application statuses. Check your API.";
+
+            }
+
+        }
+
+
+        // 7. Start dashboard
+        if (currentUser && currentUser.id) {
+
+            loadJobs();
+
+            loadMyApplications();
+
+        }
+
+    </script>
+
+</body>
+</html>
